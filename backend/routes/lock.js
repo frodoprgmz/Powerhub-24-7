@@ -13,7 +13,7 @@ router.post('/unlock', authMiddleware, async (req, res) => {
   if (req.user.role !== 'admin') {
     // Check if user has active pass
     if (!user.activePassExpiry || new Date(user.activePassExpiry) < new Date()) {
-      return res.status(403).json({ message: 'Brak aktywnego karnetu. Kup karnet, aby otworzyć zamek.' });
+      return res.status(403).json({ message: 'Brak aktywnego karnetu. Kup karnet, aby otworzyÄ‡ zamek.' });
     }
   }
 
@@ -25,21 +25,37 @@ router.post('/unlock', authMiddleware, async (req, res) => {
         userEmail: user.email,
         role: user.role,
         status: 'Sukces',
-        details: 'Zamek otwarty pomyślnie'
+        details: 'Zamek otwarty pomyĹ›lnie'
       });
-      res.json({ message: 'Zamek został otwarty!' });
+      res.json({ message: 'Zamek zostaĹ‚ otwarty!' });
     } else {
       // Log failure
       await DoorLog.create({
         userEmail: user.email,
         role: user.role,
-        status: 'Błąd',
+        status: 'BĹ‚Ä…d',
         details: `TTLock Error: ${result.errmsg || result.errcode}`
       });
-      res.status(400).json({ message: 'Nie udało się otworzyć zamka', error: result });
+      res.status(400).json({ message: 'Nie udaĹ‚o siÄ™ otworzyÄ‡ zamka', error: result });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Błąd serwera', error: error.message });
+    res.status(500).json({ message: 'BĹ‚Ä…d serwera', error: error.message });
+  }
+});
+
+// Log Bluetooth unlock from the app
+router.post('/log', authMiddleware, async (req, res) => {
+  const user = await User.findById(req.user.userId);
+  try {
+    await DoorLog.create({
+      userEmail: user.email,
+      role: user.role,
+      status: 'Sukces',
+      details: 'Zamek otwarty przez Bluetooth (Aplikacja)'
+    });
+    res.json({ message: 'Zalogowano pomyĹ›lnie' });
+  } catch (error) {
+    res.status(500).json({ message: 'BĹ‚Ä…d serwera', error: error.message });
   }
 });
 
@@ -49,9 +65,9 @@ router.post('/sendEKey', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const result = await ttlockService.sendEKey(receiverUsername, startDate, endDate);
     if (result.errcode === 0) {
-      res.json({ message: 'eKey wysłany pomyślnie!' });
+      res.json({ message: 'eKey wysĹ‚any pomyĹ›lnie!' });
     } else {
-      res.status(400).json({ message: result.errmsg || 'Błąd wysyłania eKey' });
+      res.status(400).json({ message: result.errmsg || 'BĹ‚Ä…d wysyĹ‚ania eKey' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -66,7 +82,7 @@ router.post('/getPasscode', authMiddleware, adminMiddleware, async (req, res) =>
     if (result.errcode === 0) {
       res.json({ message: `Wygenerowano kod: ${result.keyboardPwd}`, passcode: result.keyboardPwd });
     } else {
-      res.status(400).json({ message: result.errmsg || 'Błąd generowania kodu' });
+      res.status(400).json({ message: result.errmsg || 'BĹ‚Ä…d generowania kodu' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -87,7 +103,7 @@ router.get('/status', authMiddleware, async (req, res) => {
         lockMac: lock.lockMac
       });
     } else {
-      res.status(404).json({ message: 'Nie znaleziono zamków przypisanych do tego konta TTLock' });
+      res.status(404).json({ message: 'Nie znaleziono zamkĂłw przypisanych do tego konta TTLock' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -105,3 +121,4 @@ router.get('/logs', authMiddleware, adminMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+
