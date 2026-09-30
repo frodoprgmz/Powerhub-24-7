@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   offlineBannerText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     fontSize: 13,
   },
   header: {
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   langText: {
     color: '#4A5568',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     fontSize: 13,
   },
   logoutBtn: {
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#E53E3E',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     fontSize: 15,
   },
   content: {
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     marginBottom: 30,
     color: '#2D3748',
   },
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   passStatus: {
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'Helvetica', fontWeight: '900',
   },
   passExpiry: {
     fontSize: 14,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#D69E2E',
     marginTop: 8,
-    fontWeight: '600',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
   },
   loadingText: {
     color: '#A0AEC0',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   retryBtnText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     fontSize: 14,
   },
   button: {
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
   },
   textSuccess: {
     color: '#38A169',
@@ -450,6 +450,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     lineHeight: 18,
-    fontWeight: '600',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
   },
 });

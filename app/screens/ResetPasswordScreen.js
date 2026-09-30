@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   buttonDisabled: { backgroundColor: '#A0AEC0' },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  buttonText: { color: '#fff', fontSize: 18, fontFamily: 'Helvetica', fontWeight: 'bold' },
   linkWrapper: { marginTop: 20 },
-  linkText: { color: '#4A5568', fontSize: 15, fontWeight: 'bold' },
+  linkText: { color: '#4A5568', fontSize: 15, fontFamily: 'Helvetica', fontWeight: 'bold' },
 });

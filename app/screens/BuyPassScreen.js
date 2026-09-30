@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 15,
     color: '#2B6CB0',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     color: '#2D3748',
   },
   content: {
@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
   },
   passTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
     marginBottom: 10,
     color: '#2D3748',
   },
   passPrice: {
     fontSize: 26,
     color: '#38A169',
-    fontWeight: '900',
+    fontFamily: 'Helvetica', fontWeight: '900',
     marginBottom: 10,
   },
   passDesc: {

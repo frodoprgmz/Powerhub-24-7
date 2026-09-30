@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   emailHighlight: {
     color: '#2D3748',
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica', fontWeight: 'bold',
   },
   card: {
     width: '100%',
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     backgroundColor: '#A0AEC0',
   },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  buttonText: { color: '#fff', fontSize: 18, fontFamily: 'Helvetica', fontWeight: 'bold' },
   linkWrapper: { marginTop: 18 },
-  linkText: { color: '#4A5568', fontSize: 15, fontWeight: 'bold' },
+  linkText: { color: '#4A5568', fontSize: 15, fontFamily: 'Helvetica', fontWeight: 'bold' },
 });
