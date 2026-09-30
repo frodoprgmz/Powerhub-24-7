@@ -60,7 +60,7 @@ export const unlockBluetooth = async (lockData) => {
           clearTimeout(timeoutId);
           if (__DEV__) console.log('TTLock success:', lockTime, 'battery:', electricQuantity);
           // Log the unlock to the backend (fire-and-forget, errors are logged)
-          api.post('/lock/unlock').catch((e) => {
+          api.post('/lock/log').catch((e) => {
             if (__DEV__) console.warn('Backend log failed:', e?.message);
           });
           resolve(true);
