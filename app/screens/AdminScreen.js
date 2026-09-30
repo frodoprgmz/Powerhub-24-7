@@ -11,10 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { unlockBluetooth } from '../utils/ttlockHelper';
+import secureStorage from '../utils/secureStorage';
 import api from '../api';
 
 export default function AdminScreen({ navigation }) {
@@ -59,7 +59,7 @@ export default function AdminScreen({ navigation }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.clear();
+    await secureStorage.clear();
     navigation.replace('Login');
   };
 

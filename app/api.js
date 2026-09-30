@@ -1,16 +1,17 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import secureStorage from './utils/secureStorage';
 import { navigationRef } from './utils/navigationRef';
 
 const API_URL = 'https://powerhubappbackend.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // 10s timeout — Render free tier can be slow on cold start
 });
 
 // Attach token to every request
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('token');
+  const token = await secureStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,7 +24,7 @@ api.interceptors.response.use(
   async (error) => {
     const isAuthRoute = error.config?.url?.includes('/auth/');
     if (error.response?.status === 401 && !isAuthRoute) {
-      await AsyncStorage.clear();
+      await secureStorage.clear();
       if (navigationRef.isReady()) {
         navigationRef.reset({ index: 0, routes: [{ name: 'Login' }] });
       }

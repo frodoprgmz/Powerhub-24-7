@@ -18,6 +18,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { t, toggleLanguage } = useLanguage();
 
@@ -67,16 +68,26 @@ export default function RegisterScreen({ navigation }) {
           placeholderTextColor="#A0AEC0"
           returnKeyType="next"
         />
-        <TextInput
-          style={styles.input}
-          placeholder={t('password')}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#A0AEC0"
-          returnKeyType="done"
-          onSubmitEditing={handleRegister}
-        />
+
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={t('password')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            placeholderTextColor="#A0AEC0"
+            returnKeyType="done"
+            onSubmitEditing={handleRegister}
+          />
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setShowPassword((v) => !v)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -91,10 +102,7 @@ export default function RegisterScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Login')}
-        style={styles.linkWrapper}
-      >
+      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkWrapper}>
         <Text style={styles.linkText}>{t('hasAccount')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -144,6 +152,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2D3748',
   },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    backgroundColor: '#F7F9FC',
+    marginBottom: 15,
+    height: 55,
+    paddingHorizontal: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2D3748',
+    height: '100%',
+  },
+  eyeBtn: { paddingLeft: 10 },
+  eyeIcon: { fontSize: 18 },
   button: {
     width: '100%',
     height: 55,
@@ -153,9 +180,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 5,
   },
-  buttonDisabled: {
-    backgroundColor: '#A0AEC0',
-  },
+  buttonDisabled: { backgroundColor: '#A0AEC0' },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   linkWrapper: { marginTop: 18 },
   linkText: { color: '#4A5568', fontSize: 15, fontWeight: 'bold' },

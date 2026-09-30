@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../api';
 
@@ -19,9 +18,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { t, toggleLanguage } = useLanguage();
 
+  // Import secureStorage lazily to avoid circular dep issue
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert(t('error'), t('fillAllFields'));
@@ -34,10 +35,11 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
+      const secureStorage = (await import('../utils/secureStorage')).default;
       const response = await api.post('/auth/login', { email: email.trim(), password });
       const { token, role } = response.data;
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('role', role);
+      await secureStorage.setItem('token', token);
+      await secureStorage.setItem('role', role);
 
       if (role === 'admin') {
         navigation.replace('Admin');
@@ -75,16 +77,26 @@ export default function LoginScreen({ navigation }) {
           placeholderTextColor="#A0AEC0"
           returnKeyType="next"
         />
-        <TextInput
-          style={styles.input}
-          placeholder={t('password')}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#A0AEC0"
-          returnKeyType="done"
-          onSubmitEditing={handleLogin}
-        />
+
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={t('password')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            placeholderTextColor="#A0AEC0"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+          />
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setShowPassword((v) => !v)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -99,17 +111,10 @@ export default function LoginScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('ForgotPassword')}
-        style={styles.linkWrapper}
-      >
+      <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.linkWrapper}>
         <Text style={styles.linkText}>{t('forgotPassword')}</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Register')}
-        style={styles.linkWrapper}
-      >
+      <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkWrapper}>
         <Text style={styles.linkText}>{t('noAccount')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -159,6 +164,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2D3748',
   },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    backgroundColor: '#F7F9FC',
+    marginBottom: 15,
+    height: 55,
+    paddingHorizontal: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2D3748',
+    height: '100%',
+  },
+  eyeBtn: {
+    paddingLeft: 10,
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
   button: {
     width: '100%',
     height: 55,
@@ -168,9 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 5,
   },
-  buttonDisabled: {
-    backgroundColor: '#A0AEC0',
-  },
+  buttonDisabled: { backgroundColor: '#A0AEC0' },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   linkWrapper: { marginTop: 18 },
   linkText: { color: '#4A5568', fontSize: 15, fontWeight: 'bold' },

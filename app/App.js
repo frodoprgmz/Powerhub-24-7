@@ -3,7 +3,6 @@ import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 
 import LoginScreen from './screens/LoginScreen';
@@ -17,6 +16,7 @@ import VerifyEmailScreen from './screens/VerifyEmailScreen';
 
 import { LanguageProvider } from './contexts/LanguageContext';
 import { navigationRef } from './utils/navigationRef';
+import secureStorage from './utils/secureStorage';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,8 +25,8 @@ export default function App() {
 
   useEffect(() => {
     const checkToken = async () => {
-      const token = await AsyncStorage.getItem('token');
-      const role = await AsyncStorage.getItem('role');
+      const token = await secureStorage.getItem('token');
+      const role = await secureStorage.getItem('role');
       if (token) {
         if (role === 'admin') setInitialRoute('Admin');
         else setInitialRoute('Main');

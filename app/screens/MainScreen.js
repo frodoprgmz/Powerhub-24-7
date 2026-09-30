@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,27 +14,68 @@ import { useIsFocused } from '@react-navigation/native';
 import api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { unlockBluetooth } from '../utils/ttlockHelper';
+import secureStorage from '../utils/secureStorage';
+
+// AsyncStorage keys for offline cache
+const CACHE_PASS = 'cache_passInfo';
+const CACHE_LOCK = 'cache_lockStatus'; // stored in SecureStore (contains lockData)
+
+// Minimum time (ms) between automatic re-fetches when screen is focused
+const FETCH_TTL = 15000;
 
 export default function MainScreen({ navigation }) {
   const [passInfo, setPassInfo] = useState(null);
   const [lockStatus, setLockStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [showPasswordHint, setShowPasswordHint] = useState(false);
+
+  const lastFetchRef = useRef(0);
   const isFocused = useIsFocused();
   const { t, toggleLanguage } = useLanguage();
 
   useEffect(() => {
     if (isFocused) {
-      fetchPassInfo();
-      fetchLockStatus();
+      const now = Date.now();
+      // Only auto-fetch if TTL has passed, avoid hammering on quick back-navigations
+      if (now - lastFetchRef.current > FETCH_TTL) {
+        loadData();
+      }
     }
   }, [isFocused]);
+
+  const loadData = async () => {
+    setFetching(true);
+    setFetchError(false);
+    lastFetchRef.current = Date.now();
+    await Promise.all([fetchPassInfo(), fetchLockStatus()]);
+    setFetching(false);
+  };
 
   const fetchPassInfo = async () => {
     try {
       const response = await api.get('/passes/current');
       setPassInfo(response.data);
+      setIsOffline(false);
+      // Cache for offline use
+      await AsyncStorage.setItem(CACHE_PASS, JSON.stringify(response.data));
     } catch (error) {
-      console.log('Error fetching pass info', error);
+      // Try loading from cache
+      try {
+        const cached = await AsyncStorage.getItem(CACHE_PASS);
+        if (cached) {
+          setPassInfo(JSON.parse(cached));
+          setIsOffline(true);
+        } else {
+          setFetchError(true);
+          setPassInfo({ hasActivePass: false });
+        }
+      } catch {
+        setFetchError(true);
+        setPassInfo({ hasActivePass: false });
+      }
     }
   };
 
@@ -42,18 +83,31 @@ export default function MainScreen({ navigation }) {
     try {
       const res = await api.get('/lock/status');
       setLockStatus(res.data);
-    } catch (e) {
-      console.log('No lock status found', e);
+      setIsOffline(false);
+      // Cache lockData securely (contains Bluetooth key)
+      await secureStorage.setItem(CACHE_LOCK, JSON.stringify(res.data));
+    } catch {
+      try {
+        const cached = await secureStorage.getItem(CACHE_LOCK);
+        if (cached) {
+          setLockStatus(JSON.parse(cached));
+          setIsOffline(true);
+        }
+      } catch {
+        // No cache, BT-only unlock won't work — fallback will try API
+      }
     }
   };
 
   const handleUnlock = async () => {
     setLoading(true);
     try {
-      if (lockStatus && lockStatus.lockData) {
+      if (lockStatus?.lockData) {
+        // Bluetooth path — works offline!
         await unlockBluetooth(lockStatus.lockData);
         Alert.alert(t('success'), t('openDoor'));
       } else {
+        // Fallback to API (requires internet)
         const response = await api.post('/lock/unlock');
         Alert.alert(t('success'), response.data.message || t('openDoor'));
       }
@@ -70,12 +124,22 @@ export default function MainScreen({ navigation }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.clear();
+    await secureStorage.clear();
     navigation.replace('Login');
   };
 
+  const canUnlock = passInfo?.hasActivePass && !loading;
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Offline Banner */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>📡 {t('offlineBanner')}</Text>
+        </View>
+      )}
+
+      {/* Header */}
       <View style={styles.header}>
         <Image source={require('../assets/logo.png')} style={styles.logoSmall} resizeMode="contain" />
         <View style={styles.headerRight}>
@@ -91,38 +155,55 @@ export default function MainScreen({ navigation }) {
       <View style={styles.content}>
         <Text style={styles.title}>{t('yourPanel')}</Text>
 
-        {passInfo ? (
+        {/* Pass Info Card */}
+        {fetching && !passInfo ? (
+          <View style={styles.passCard}>
+            <ActivityIndicator size="large" color="#2D3748" />
+            <Text style={styles.loadingText}>{t('loadingPass')}</Text>
+          </View>
+        ) : fetchError && !passInfo?.hasActivePass ? (
+          <View style={styles.passCard}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>{t('fetchError')}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
+              <Text style={styles.retryBtnText}>{t('retry')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <View style={styles.passCard}>
             <View style={styles.statusRow}>
               <Text style={styles.passLabel}>{t('passStatus')}</Text>
               <Text
                 style={[
                   styles.passStatus,
-                  passInfo.hasActivePass ? styles.textSuccess : styles.textError,
+                  passInfo?.hasActivePass ? styles.textSuccess : styles.textError,
                 ]}
               >
-                {passInfo.hasActivePass ? t('active') : t('inactive')}
+                {passInfo?.hasActivePass ? t('active') : t('inactive')}
               </Text>
             </View>
 
-            {passInfo.hasActivePass && passInfo.activePassExpiry && (
+            {passInfo?.hasActivePass && passInfo?.activePassExpiry && (
               <Text style={styles.passExpiry}>
                 {t('validUntil')} {new Date(passInfo.activePassExpiry).toLocaleString()}
               </Text>
             )}
+
+            {isOffline && (
+              <Text style={styles.cachedNote}>🕐 {t('cachedData')}</Text>
+            )}
           </View>
-        ) : (
-          <ActivityIndicator size="large" color="#2D3748" style={{ marginBottom: 30 }} />
         )}
 
+        {/* Unlock Button */}
         <TouchableOpacity
           style={[
             styles.button,
             styles.unlockButton,
-            (!passInfo?.hasActivePass || loading) && styles.disabledButton,
+            !canUnlock && styles.disabledButton,
           ]}
           onPress={handleUnlock}
-          disabled={!passInfo?.hasActivePass || loading}
+          disabled={!canUnlock}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -131,15 +212,21 @@ export default function MainScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
+        {/* Buy Pass Button */}
         <TouchableOpacity
           style={[styles.button, styles.buyButton]}
           onPress={() => navigation.navigate('BuyPass')}
+          disabled={isOffline}
         >
-          <Text style={styles.buttonText}>{t('buyPass')}</Text>
+          <Text style={[styles.buttonText, isOffline && { opacity: 0.5 }]}>{t('buyPass')}</Text>
         </TouchableOpacity>
 
-        {!passInfo?.hasActivePass && (
+        {!passInfo?.hasActivePass && !fetching && (
           <Text style={styles.infoText}>{t('needPass')}</Text>
+        )}
+
+        {isOffline && (
+          <Text style={styles.infoText}>{t('offlineUnlockInfo')}</Text>
         )}
       </View>
     </SafeAreaView>
@@ -150,6 +237,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F9FC',
+  },
+  offlineBanner: {
+    backgroundColor: '#D69E2E',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   header: {
     flexDirection: 'row',
@@ -214,6 +312,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
     alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
   },
   statusRow: {
     flexDirection: 'row',
@@ -233,6 +333,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#718096',
     marginTop: 5,
+  },
+  cachedNote: {
+    fontSize: 12,
+    color: '#D69E2E',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  loadingText: {
+    color: '#A0AEC0',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#718096',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: '#2D3748',
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   button: {
     width: '100%',
