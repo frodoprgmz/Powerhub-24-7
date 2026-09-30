@@ -1,11 +1,18 @@
-﻿const express = require('express');
+const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { sendEmail } = require('../services/emailService');
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per IP
+  message: { message: 'Zbyt wiele prób z tego adresu IP. Spróbuj ponownie za 15 minut.' }
+});
 
 router.post('/register', async (req, res) => {
   const { email, password, role } = req.body;
@@ -42,7 +49,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
@@ -161,3 +168,4 @@ router.post('/reset-password', async (req, res) => {
 });
 
 module.exports = router;
+

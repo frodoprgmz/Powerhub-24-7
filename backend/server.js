@@ -9,8 +9,22 @@ const lockRoutes = require('./routes/lock');
 const usersRoutes = require('./routes/users');
 
 const app = express();
+
+// Trust proxy is required if deploying to Render, Heroku, etc., 
+// so the rate limiter gets the real client IP instead of the load balancer's IP.
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(cors());
+
+// Global rate limiting for API endpoints (e.g. 100 requests per 15 minutes per IP)
+const rateLimit = require('express-rate-limit');
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: 'Zbyt wiele zapytań z tego IP, spróbuj ponownie za 15 minut.' }
+});
+app.use('/api/', apiLimiter);
 
 // Add a placeholder to check status
 app.get('/api/status', (req, res) => res.json({ status: 'ok' }));
@@ -26,3 +40,4 @@ mongoose.connect(process.env.MONGODB_URI)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
