@@ -1,0 +1,10 @@
+﻿const fs = require('fs');
+let content = fs.readFileSync('routes/lock.js', 'utf8');
+content = content.replace(/BĹ‚Ä…d/g, 'Błąd');
+content = content.replace(/pomyĹ›lnie/g, 'pomyślnie');
+content = content.replace(/otworzyÄ‡/g, 'otworzyć');
+content = content.replace(/wysĹ‚any/g, 'wysłany');
+content = content.replace(/zamkĂłw/g, 'zamków');
+content = content.replace(/zostaĹ‚/g, 'został');
+content = content.replace(/udaĹ‚o siÄ™/g, 'udało się');
+fs.writeFileSync('routes/lock.js', content, 'utf8');

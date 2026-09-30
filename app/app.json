@@ -47,6 +47,12 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "893b804a-c41f-4ece-a21a-586220b5ec40"
+      }
+    },
+    "owner": "frodo06"
   }
 }
