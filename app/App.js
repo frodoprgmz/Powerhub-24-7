@@ -17,6 +17,7 @@ import VerifyEmailScreen from './screens/VerifyEmailScreen';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { navigationRef } from './utils/navigationRef';
 import secureStorage from './utils/secureStorage';
+import { syncOfflineLogs } from './utils/logger';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,8 @@ export default function App() {
       if (token) {
         if (role === 'admin') setInitialRoute('Admin');
         else setInitialRoute('Main');
+        // Synchronizuj logi offline z tła
+        syncOfflineLogs();
       } else {
         setInitialRoute('Login');
       }

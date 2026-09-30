@@ -1,7 +1,7 @@
 import { NativeModules, Platform, PermissionsAndroid } from 'react-native';
 import { Ttlock, LockControlType } from 'react-native-ttlock';
 import BleManager from 'react-native-ble-manager';
-import api from '../api';
+import { logBluetoothEvent } from './logger';
 
 const requestPermissions = async () => {
   if (Platform.OS === 'android') {
@@ -59,10 +59,8 @@ export const unlockBluetooth = async (lockData) => {
           isResolved = true;
           clearTimeout(timeoutId);
           if (__DEV__) console.log('TTLock success:', lockTime, 'battery:', electricQuantity);
-          // Log the unlock to the backend (fire-and-forget, errors are logged)
-          api.post('/lock/log').catch((e) => {
-            if (__DEV__) console.warn('Backend log failed:', e?.message);
-          });
+          // Logowanie do backendu (z obsługą offline)
+          logBluetoothEvent('Sukces', 'Zamek otwarty przez Bluetooth (Aplikacja)');
           resolve(true);
         },
         (errorCode, errorDesc) => {
@@ -70,6 +68,10 @@ export const unlockBluetooth = async (lockData) => {
           isResolved = true;
           clearTimeout(timeoutId);
           if (__DEV__) console.warn('TTLock error:', errorCode, errorDesc);
+          
+          // Zaloguj błąd do backendu
+          logBluetoothEvent('Błąd', `Błąd Bluetooth: ${errorCode} - ${errorDesc}`);
+          
           reject(new Error('ERR_COMM'));
         }
       );
