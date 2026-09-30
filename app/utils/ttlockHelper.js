@@ -42,14 +42,14 @@ export const unlockBluetooth = async (lockData) => {
 
       let isResolved = false;
 
-      // Timeout po 4.5 sekundach
+      // Timeout po 10 sekundach
       const timeoutId = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
           try { Ttlock.stopScan(); } catch (e) {}
           reject(new Error('ERR_TIMEOUT'));
         }
-      }, 4500);
+      }, 10000);
 
       Ttlock.controlLock(
         LockControlType.Unlock,
