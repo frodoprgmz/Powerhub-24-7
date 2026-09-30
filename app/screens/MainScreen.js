@@ -23,6 +23,18 @@ const CACHE_LOCK = 'cache_lockStatus'; // stored in SecureStore (contains lockDa
 // Minimum time (ms) between automatic re-fetches when screen is focused
 const FETCH_TTL = 15000;
 
+/**
+ * Checks whether a pass is truly active RIGHT NOW based on its expiry date.
+ * Used for both online (server data) and offline (cached data).
+ * When offline the server can't revoke anything — but we enforce
+ * the expiry timestamp that was written into the cache.
+ */
+const isPassCurrentlyActive = (passData) => {
+  if (!passData?.hasActivePass) return false;
+  if (!passData?.activePassExpiry) return false;
+  return new Date(passData.activePassExpiry) > new Date();
+};
+
 export default function MainScreen({ navigation }) {
   const [passInfo, setPassInfo] = useState(null);
   const [lockStatus, setLockStatus] = useState(null);
@@ -128,7 +140,10 @@ export default function MainScreen({ navigation }) {
     navigation.replace('Login');
   };
 
-  const canUnlock = passInfo?.hasActivePass && !loading;
+  // Compute actual active state based on server data OR cached data + local expiry check
+  const isActiveNow = isPassCurrentlyActive(passInfo);
+  const isExpiredOffline = isOffline && passInfo?.hasActivePass && !isActiveNow;
+  const canUnlock = isActiveNow && !loading;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -176,21 +191,32 @@ export default function MainScreen({ navigation }) {
               <Text
                 style={[
                   styles.passStatus,
-                  passInfo?.hasActivePass ? styles.textSuccess : styles.textError,
+                  isActiveNow ? styles.textSuccess : styles.textError,
                 ]}
               >
-                {passInfo?.hasActivePass ? t('active') : t('inactive')}
+                {isExpiredOffline
+                  ? t('expired')
+                  : isActiveNow
+                    ? t('active')
+                    : t('inactive')}
               </Text>
             </View>
 
-            {passInfo?.hasActivePass && passInfo?.activePassExpiry && (
+            {passInfo?.activePassExpiry && (
               <Text style={styles.passExpiry}>
-                {t('validUntil')} {new Date(passInfo.activePassExpiry).toLocaleString()}
+                {isActiveNow ? t('validUntil') : t('expiredOn')}{' '}
+                {new Date(passInfo.activePassExpiry).toLocaleString()}
               </Text>
             )}
 
-            {isOffline && (
+            {isOffline && !isExpiredOffline && (
               <Text style={styles.cachedNote}>🕐 {t('cachedData')}</Text>
+            )}
+
+            {isExpiredOffline && (
+              <Text style={styles.expiredOfflineNote}>
+                ⚠️ {t('passExpiredOffline')}
+              </Text>
             )}
           </View>
         )}
@@ -221,11 +247,15 @@ export default function MainScreen({ navigation }) {
           <Text style={[styles.buttonText, isOffline && { opacity: 0.5 }]}>{t('buyPass')}</Text>
         </TouchableOpacity>
 
-        {!passInfo?.hasActivePass && !fetching && (
+        {!isActiveNow && !fetching && !isExpiredOffline && (
           <Text style={styles.infoText}>{t('needPass')}</Text>
         )}
 
-        {isOffline && (
+        {isExpiredOffline && !fetching && (
+          <Text style={styles.infoText}>{t('passExpiredOfflineHint')}</Text>
+        )}
+
+        {isOffline && isActiveNow && (
           <Text style={styles.infoText}>{t('offlineUnlockInfo')}</Text>
         )}
       </View>
@@ -407,5 +437,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  expiredOfflineNote: {
+    color: '#E53E3E',
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontWeight: '600',
   },
 });
