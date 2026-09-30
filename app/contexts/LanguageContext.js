@@ -113,7 +113,7 @@ const translations = {
     somethingWentWrong: 'Coś poszło nie tak',
     fillAllFields: 'Wypełnij wszystkie pola',
     backToLogin: 'Wróć do logowania',
-    loading: 'Ładowanie...',
+    dateRangeInvalid: 'Data końcowa musi być późniejsza niż data początkowa.',
 
     // Bluetooth / Lock errors
     ERR_PERMS: 'Brak uprawnień do Bluetooth/Lokalizacji',
@@ -232,7 +232,7 @@ const translations = {
     somethingWentWrong: 'Something went wrong',
     fillAllFields: 'Fill in all fields',
     backToLogin: 'Back to login',
-    loading: 'Loading...',
+    dateRangeInvalid: 'End date must be after the start date.',
 
     // Bluetooth / Lock errors
     ERR_PERMS: 'Missing Bluetooth/Location permissions',

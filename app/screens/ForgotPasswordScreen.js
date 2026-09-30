@@ -13,14 +13,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../api';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
   const handleSendCode = async () => {
-    if (!email) {
+    if (!email.trim()) {
       Alert.alert(t('error'), t('enterEmail'));
+      return;
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      Alert.alert(t('error'), t('invalidEmail'));
       return;
     }
     setLoading(true);

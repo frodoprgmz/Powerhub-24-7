@@ -22,7 +22,8 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const isAuthRoute = error.config?.url?.includes('/auth/');
+    // Use startsWith on the path to avoid bypass via query params like ?redirect=/auth/login
+    const isAuthRoute = error.config?.url?.startsWith('/auth/');
     if (error.response?.status === 401 && !isAuthRoute) {
       await secureStorage.clear();
       if (navigationRef.isReady()) {

@@ -17,6 +17,8 @@ import { unlockBluetooth } from '../utils/ttlockHelper';
 import secureStorage from '../utils/secureStorage';
 import api from '../api';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function AdminScreen({ navigation }) {
   const { t, toggleLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('logs');
@@ -33,11 +35,31 @@ export default function AdminScreen({ navigation }) {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    // Verify role on server before rendering admin panel
+    const verifyRole = async () => {
+      try {
+        await api.get('/users'); // Quick check if we have admin rights
+        setIsAdminVerified(true);
+        fetchData();
+      } catch (error) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          Alert.alert(t('error'), 'Unauthorized access');
+          logout();
+        }
+      }
+    };
+    verifyRole();
+  }, []);
+
+  useEffect(() => {
+    if (isAdminVerified) fetchData();
+  }, [activeTab, isAdminVerified]);
 
   const fetchData = async () => {
+    if (!isAdminVerified) return;
     setLoading(true);
     try {
       if (activeTab === 'logs') {
@@ -88,11 +110,26 @@ export default function AdminScreen({ navigation }) {
     }
   };
 
+  const isEkeySubmittingRef = useRef(false);
+  const isCodeSubmittingRef = useRef(false);
+
+  const validateDates = () => {
+    if (endDate <= startDate) {
+      Alert.alert(t('error'), t('dateRangeInvalid'));
+      return false;
+    }
+    return true;
+  };
+
   const handleSendEKey = async () => {
-    if (!ekeyEmail) return Alert.alert(t('error'), t('searchEmail'));
+    if (!ekeyEmail.trim()) return Alert.alert(t('error'), t('searchEmail'));
+    if (!EMAIL_REGEX.test(ekeyEmail.trim())) return Alert.alert(t('error'), t('invalidEmail'));
+    if (!validateDates()) return;
+    if (isEkeySubmittingRef.current) return;
+    isEkeySubmittingRef.current = true;
     try {
       const res = await api.post('/lock/sendEKey', {
-        receiverUsername: ekeyEmail,
+        receiverUsername: ekeyEmail.trim(),
         startDate: startDate.getTime(),
         endDate: endDate.getTime(),
       });
@@ -100,10 +137,15 @@ export default function AdminScreen({ navigation }) {
       setEkeyEmail('');
     } catch (error) {
       Alert.alert(t('error'), error.response?.data?.message || t('somethingWentWrong'));
+    } finally {
+      isEkeySubmittingRef.current = false;
     }
   };
 
   const handleGeneratePasscode = async () => {
+    if (!validateDates()) return;
+    if (isCodeSubmittingRef.current) return;
+    isCodeSubmittingRef.current = true;
     try {
       const res = await api.post('/lock/getPasscode', {
         startDate: startDate.getTime(),
@@ -112,6 +154,8 @@ export default function AdminScreen({ navigation }) {
       Alert.alert(t('success'), t('passcodeResult') + '\n\n' + res.data.passcode);
     } catch (error) {
       Alert.alert(t('error'), error.response?.data?.message || t('somethingWentWrong'));
+    } finally {
+      isCodeSubmittingRef.current = false;
     }
   };
 
@@ -164,6 +208,15 @@ export default function AdminScreen({ navigation }) {
       </TouchableOpacity>
     </View>
   );
+
+  if (!isAdminVerified) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2D3748" />
+        <Text style={styles.loadingText}>{t('loading')}</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

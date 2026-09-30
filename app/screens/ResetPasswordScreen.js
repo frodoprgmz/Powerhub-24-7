@@ -14,12 +14,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import api from '../api';
 
 export default function ResetPasswordScreen({ route, navigation }) {
-  const { email } = route.params;
+  const { email } = route.params ?? {};
   const [token, setToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
+
+  // Guard against missing params (e.g. direct deep-link navigation)
+  if (!email) {
+    navigation.replace('Login');
+    return null;
+  }
 
   const handleReset = async () => {
     if (!token || !newPassword) {
