@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import VerifyEmailScreen from './screens/VerifyEmailScreen';
 
 import { LanguageProvider } from './contexts/LanguageContext';
+import { navigationRef } from './utils/navigationRef';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,14 +37,29 @@ export default function App() {
     checkToken();
   }, []);
 
-  if (!initialRoute) return null; // or a loading screen
+  if (!initialRoute) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar style="dark" />
+        <Image
+          source={require('./assets/logo.png')}
+          style={styles.loadingLogo}
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#2D3748" style={styles.loadingSpinner} />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaProvider style={{ backgroundColor: '#ffffff' }}>
+    <SafeAreaProvider style={{ backgroundColor: '#F7F9FC' }}>
       <LanguageProvider>
         <StatusBar style="dark" />
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#ffffff' } }}>
+        <NavigationContainer ref={navigationRef}>
+          <Stack.Navigator
+            initialRouteName={initialRoute}
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F9FC' } }}
+          >
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
@@ -57,3 +74,19 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#F7F9FC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingLogo: {
+    width: 220,
+    height: 88,
+  },
+  loadingSpinner: {
+    marginTop: 40,
+  },
+});

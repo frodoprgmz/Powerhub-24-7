@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
@@ -43,11 +51,9 @@ export default function MainScreen({ navigation }) {
     setLoading(true);
     try {
       if (lockStatus && lockStatus.lockData) {
-        // Unlock via bluetooth
         await unlockBluetooth(lockStatus.lockData);
         Alert.alert(t('success'), t('openDoor'));
       } else {
-        // Fallback to backend API
         const response = await api.post('/lock/unlock');
         Alert.alert(t('success'), response.data.message || t('openDoor'));
       }
@@ -84,16 +90,21 @@ export default function MainScreen({ navigation }) {
 
       <View style={styles.content}>
         <Text style={styles.title}>{t('yourPanel')}</Text>
-        
+
         {passInfo ? (
           <View style={styles.passCard}>
             <View style={styles.statusRow}>
               <Text style={styles.passLabel}>{t('passStatus')}</Text>
-              <Text style={[styles.passStatus, passInfo.hasActivePass ? styles.textSuccess : styles.textError]}>
+              <Text
+                style={[
+                  styles.passStatus,
+                  passInfo.hasActivePass ? styles.textSuccess : styles.textError,
+                ]}
+              >
                 {passInfo.hasActivePass ? t('active') : t('inactive')}
               </Text>
             </View>
-            
+
             {passInfo.hasActivePass && passInfo.activePassExpiry && (
               <Text style={styles.passExpiry}>
                 {t('validUntil')} {new Date(passInfo.activePassExpiry).toLocaleString()}
@@ -101,11 +112,15 @@ export default function MainScreen({ navigation }) {
             )}
           </View>
         ) : (
-          <ActivityIndicator size="large" color="#000" style={{ marginBottom: 30 }} />
+          <ActivityIndicator size="large" color="#2D3748" style={{ marginBottom: 30 }} />
         )}
 
-        <TouchableOpacity 
-          style={[styles.button, styles.unlockButton, !passInfo?.hasActivePass && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.unlockButton,
+            (!passInfo?.hasActivePass || loading) && styles.disabledButton,
+          ]}
           onPress={handleUnlock}
           disabled={!passInfo?.hasActivePass || loading}
         >
@@ -114,6 +129,13 @@ export default function MainScreen({ navigation }) {
           ) : (
             <Text style={styles.buttonText}>{t('openDoor')}</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.buyButton]}
+          onPress={() => navigation.navigate('BuyPass')}
+        >
+          <Text style={styles.buttonText}>{t('buyPass')}</Text>
         </TouchableOpacity>
 
         {!passInfo?.hasActivePass && (
@@ -133,7 +155,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderColor: '#E2E8F0',
@@ -147,7 +170,8 @@ const styles = StyleSheet.create({
     height: 45,
   },
   langBtn: {
-    padding: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     marginRight: 10,
     backgroundColor: '#EDF2F7',
     borderRadius: 8,
@@ -155,17 +179,19 @@ const styles = StyleSheet.create({
   langText: {
     color: '#4A5568',
     fontWeight: 'bold',
+    fontSize: 13,
   },
   logoutBtn: {
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   logoutText: {
     color: '#E53E3E',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 15,
   },
   content: {
-    padding: 20,
+    padding: 24,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -183,8 +209,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 30,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
     alignItems: 'center',
@@ -214,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -246,7 +272,8 @@ const styles = StyleSheet.create({
   infoText: {
     color: '#A0AEC0',
     fontSize: 13,
-    marginTop: 10,
+    marginTop: 8,
     textAlign: 'center',
-  }
+    lineHeight: 18,
+  },
 });

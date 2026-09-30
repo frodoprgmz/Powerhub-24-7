@@ -1,5 +1,13 @@
-﻿import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../api';
@@ -12,7 +20,7 @@ export default function BuyPassScreen({ navigation }) {
     setLoading(true);
     try {
       const response = await api.post('/passes/buy', { type });
-      Alert.alert(t('success'), t('paymentSuccess') + response.data.message);
+      Alert.alert(t('success'), t('paymentSuccess') + (response.data.message || ''));
       navigation.goBack();
     } catch (error) {
       Alert.alert(t('paymentErrorTitle'), error.response?.data?.message || t('paymentError'));
@@ -25,36 +33,46 @@ export default function BuyPassScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Wróć</Text>
+          <Text style={styles.backText}>{t('back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kup Karnet</Text>
-        <View style={{ width: 60 }} />
+        <Text style={styles.headerTitle}>{t('buyPassTitle')}</Text>
+        <View style={{ width: 70 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.info}>Wybierz rodzaj karnetu. (Środowisko testowe - płatność zawsze kończy się sukcesem).</Text>
+        <Image
+          source={require('../assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        <TouchableOpacity 
-          style={styles.passCard} 
+        <Text style={styles.info}>{t('testModeNote')}</Text>
+
+        <TouchableOpacity
+          style={[styles.passCard, loading && styles.passCardDisabled]}
           onPress={() => handleBuy('daily')}
           disabled={loading}
+          activeOpacity={0.8}
         >
-          <Text style={styles.passTitle}>Karnet 1-dniowy</Text>
-          <Text style={styles.passPrice}>20 PLN</Text>
-          <Text style={styles.passDesc}>Ważny 24 godziny od momentu zakupu</Text>
+          <Text style={styles.passTitle}>{t('passDaily')}</Text>
+          <Text style={styles.passPrice}>{t('passDailyPrice')}</Text>
+          <Text style={styles.passDesc}>{t('passDailyDesc')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.passCard, styles.passCardHighlight]} 
+        <TouchableOpacity
+          style={[styles.passCard, styles.passCardHighlight, loading && styles.passCardDisabled]}
           onPress={() => handleBuy('monthly')}
           disabled={loading}
+          activeOpacity={0.8}
         >
-          <Text style={styles.passTitle}>Karnet 30-dniowy</Text>
-          <Text style={styles.passPrice}>100 PLN</Text>
-          <Text style={styles.passDesc}>Najlepsza opcja! Ważny przez równe 30 dni.</Text>
+          <Text style={styles.passTitle}>{t('passMonthly')}</Text>
+          <Text style={styles.passPrice}>{t('passMonthlyPrice')}</Text>
+          <Text style={styles.passDesc}>{t('passMonthlyDesc')}</Text>
         </TouchableOpacity>
 
-        {loading && <ActivityIndicator size="large" color="#2B6CB0" style={{ marginTop: 30 }} />}
+        {loading && (
+          <ActivityIndicator size="large" color="#2B6CB0" style={{ marginTop: 20 }} />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -69,17 +87,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderColor: '#E2E8F0',
   },
   backBtn: {
-    padding: 5,
-    width: 60,
+    width: 70,
+    paddingVertical: 5,
   },
   backText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#2B6CB0',
     fontWeight: 'bold',
   },
@@ -89,24 +108,32 @@ const styles = StyleSheet.create({
     color: '#2D3748',
   },
   content: {
-    padding: 20,
+    flex: 1,
+    padding: 24,
     alignItems: 'center',
+  },
+  logo: {
+    width: 180,
+    height: 72,
+    marginBottom: 20,
+    marginTop: 10,
   },
   info: {
     fontSize: 14,
     color: '#718096',
     textAlign: 'center',
     marginBottom: 30,
-    lineHeight: 20,
+    lineHeight: 22,
+    paddingHorizontal: 10,
   },
   passCard: {
     width: '100%',
-    padding: 25,
+    padding: 28,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#E2E8F0',
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: 18,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -118,6 +145,9 @@ const styles = StyleSheet.create({
     borderColor: '#2B6CB0',
     backgroundColor: '#EBF8FF',
   },
+  passCardDisabled: {
+    opacity: 0.6,
+  },
   passTitle: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -125,7 +155,7 @@ const styles = StyleSheet.create({
     color: '#2D3748',
   },
   passPrice: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#38A169',
     fontWeight: '900',
     marginBottom: 10,
@@ -134,5 +164,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#718096',
     textAlign: 'center',
-  }
+    lineHeight: 18,
+  },
 });
