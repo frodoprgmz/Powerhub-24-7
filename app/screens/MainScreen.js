@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -71,12 +70,12 @@ export default function MainScreen({ navigation }) {
       const response = await api.get('/passes/current');
       setPassInfo(response.data);
       setIsOffline(false);
-      // Cache for offline use
-      await AsyncStorage.setItem(CACHE_PASS, JSON.stringify(response.data));
+      // Cache for offline use — in SecureStore to prevent tampering
+      await secureStorage.setItem(CACHE_PASS, JSON.stringify(response.data));
     } catch (error) {
       // Try loading from cache
       try {
-        const cached = await AsyncStorage.getItem(CACHE_PASS);
+        const cached = await secureStorage.getItem(CACHE_PASS);
         if (cached) {
           setPassInfo(JSON.parse(cached));
           setIsOffline(true);
@@ -111,7 +110,13 @@ export default function MainScreen({ navigation }) {
     }
   };
 
+  // Guard against double-tap: loading state disables the button,
+  // but this ref prevents any race between the tap and the state update.
+  const isUnlockingRef = useRef(false);
+
   const handleUnlock = async () => {
+    if (isUnlockingRef.current) return;
+    isUnlockingRef.current = true;
     setLoading(true);
     try {
       if (lockStatus?.lockData) {
@@ -132,6 +137,7 @@ export default function MainScreen({ navigation }) {
       }
     } finally {
       setLoading(false);
+      isUnlockingRef.current = false;
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -52,7 +52,7 @@ export default function AdminScreen({ navigation }) {
         setUsers(usersRes.data);
       }
     } catch (error) {
-      console.log('Admin fetch error:', error);
+      // Silent fail — fetchData is triggered on tab change; UI shows stale/empty data
     } finally {
       setLoading(false);
     }
@@ -63,10 +63,14 @@ export default function AdminScreen({ navigation }) {
     navigation.replace('Login');
   };
 
+  const isUnlockingRef = useRef(false);
+
   const handleUnlock = async () => {
     if (!lockStatus || !lockStatus.lockData) {
       return Alert.alert(t('error'), t('lockDataError'));
     }
+    if (isUnlockingRef.current) return;
+    isUnlockingRef.current = true;
     setLoading(true);
     try {
       await unlockBluetooth(lockStatus.lockData);
@@ -80,6 +84,7 @@ export default function AdminScreen({ navigation }) {
       );
     } finally {
       setLoading(false);
+      isUnlockingRef.current = false;
     }
   };
 

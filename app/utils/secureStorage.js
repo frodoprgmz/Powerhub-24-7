@@ -4,14 +4,20 @@
  * Wraps expo-secure-store for sensitive data (token, role, lockData).
  * Falls back to AsyncStorage if SecureStore is unavailable (web/emulator).
  *
- * Sensitive keys stored in SecureStore: token, role, cache_lockStatus
- * Non-sensitive keys stay in AsyncStorage: lang, cache_passInfo
+ * Sensitive keys stored in SecureStore:
+ *   token          — JWT auth token
+ *   role           — user role (admin/user), used for initial routing
+ *   cache_passInfo — pass status + expiry (prevents offline cache tampering)
+ *   cache_lockStatus — lockData bluetooth key for the door
+ *
+ * Non-sensitive keys stay in AsyncStorage:
+ *   lang — UI language preference
  */
 
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SECURE_KEYS = new Set(['token', 'role', 'cache_lockStatus']);
+const SECURE_KEYS = new Set(['token', 'role', 'cache_passInfo', 'cache_lockStatus']);
 
 const secureStorage = {
   async getItem(key) {
