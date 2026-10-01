@@ -19,6 +19,87 @@ import api from '../api';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+
+const UserItem = ({ u, t, doUpdatePass, cancelPass }) => {
+  const [localStart, setLocalStart] = useState(new Date());
+  const [localEnd, setLocalEnd] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const [showStart, setShowStart] = useState(false);
+  const [showEnd, setShowEnd] = useState(false);
+
+  const now = new Date();
+  const isActive =
+    u.activePassExpiry &&
+    new Date(u.activePassExpiry) > now &&
+    (!u.activePassStart || new Date(u.activePassStart) <= now);
+
+  return (
+    <View style={styles.userItem}>
+      <View style={styles.userInfoRow}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={styles.listTitle}>{u.email}</Text>
+          <Text style={styles.listSubtitle}>
+            {isActive
+              ? `${t('validUntil')} ${new Date(u.activePassExpiry).toLocaleDateString()}`
+              : t('inactive')}
+          </Text>
+        </View>
+        <Text style={[styles.listBadge, isActive ? styles.badgeSuccess : styles.badgeError]}>
+          {isActive ? t('active') : t('inactive')}
+        </Text>
+      </View>
+
+      <View style={[styles.dateRow, { marginVertical: 10 }]}>
+        <TouchableOpacity onPress={() => setShowStart(true)} style={styles.dateBtn}>
+          <Text style={styles.dateLabel}>{t('startDate')}:</Text>
+          <Text style={styles.dateValue}>{localStart.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowEnd(true)} style={styles.dateBtn}>
+          <Text style={styles.dateLabel}>{t('endDate')}:</Text>
+          <Text style={styles.dateValue}>{localEnd.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.userActionsRow}>
+        <TouchableOpacity
+          style={[styles.userBtn, { backgroundColor: '#38A169' }]}
+          onPress={() => doUpdatePass(u._id, localStart, localEnd)}
+        >
+          <Text style={styles.userBtnText}>{t('grantFromCalendar')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.userBtn, { backgroundColor: '#E53E3E' }]}
+          onPress={() => cancelPass(u._id)}
+        >
+          <Text style={styles.userBtnText}>{t('cancelPass')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showStart && (
+        <DateTimePicker
+          value={localStart}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowStart(false);
+            if (date) setLocalStart(date);
+          }}
+        />
+      )}
+      {showEnd && (
+        <DateTimePicker
+          value={localEnd}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowEnd(false);
+            if (date) setLocalEnd(date);
+          }}
+        />
+      )}
+    </View>
+  );
+};
+
 export default function AdminScreen({ navigation }) {
   const { t, toggleLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('logs');
@@ -159,27 +240,25 @@ export default function AdminScreen({ navigation }) {
     }
   };
 
-  const handleUpdateUserPass = async (userId, cancel = false) => {
-    if (cancel) {
-      Alert.alert(t('confirmCancelTitle'), t('confirmCancelMsg'), [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('yes'),
-          style: 'destructive',
-          onPress: () => doUpdatePass(userId, true),
-        },
-      ]);
-    } else {
-      doUpdatePass(userId, false);
-    }
+  
+  const handleCancelUserPass = async (userId) => {
+    Alert.alert(t('confirmCancelTitle'), t('confirmCancelMsg'), [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('yes'),
+        style: 'destructive',
+        onPress: () => doUpdatePass(userId, null, null, true),
+      },
+    ]);
   };
 
-  const doUpdatePass = async (userId, cancel) => {
+  const doUpdatePass = async (userId, customStart, customEnd, cancel = false) => {
+
     try {
       let payload = { startDate: null, expiryDate: null };
       if (!cancel) {
-        payload.startDate = startDate.getTime();
-        payload.expiryDate = endDate.getTime();
+        payload.startDate = customStart.getTime();
+        payload.expiryDate = customEnd.getTime();
       }
       await api.post(`/users/${userId}/updatePass`, payload);
       Alert.alert(t('success'), t('passUpdated'));
@@ -328,7 +407,6 @@ export default function AdminScreen({ navigation }) {
                 <Text style={styles.refreshText}>{t('refresh')}</Text>
               </TouchableOpacity>
             </View>
-            <DateRangeSelector />
             <TextInput
               style={styles.searchInput}
               placeholder={t('searchClient')}
@@ -341,49 +419,15 @@ export default function AdminScreen({ navigation }) {
             ) : filteredUsers.length === 0 ? (
               <Text style={styles.emptyText}>{t('noClients')}</Text>
             ) : (
-              filteredUsers.map((u) => {
-                const now = new Date();
-                const isActive =
-                  u.activePassExpiry &&
-                  new Date(u.activePassExpiry) > now &&
-                  (!u.activePassStart || new Date(u.activePassStart) <= now);
-                return (
-                  <View key={u._id} style={styles.userItem}>
-                    <View style={styles.userInfoRow}>
-                      <View style={{ flex: 1, marginRight: 8 }}>
-                        <Text style={styles.listTitle}>{u.email}</Text>
-                        <Text style={styles.listSubtitle}>
-                          {isActive
-                            ? `${t('validUntil')} ${new Date(u.activePassExpiry).toLocaleDateString()}`
-                            : t('inactive')}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.listBadge,
-                          isActive ? styles.badgeSuccess : styles.badgeError,
-                        ]}
-                      >
-                        {isActive ? t('active') : t('inactive')}
-                      </Text>
-                    </View>
-                    <View style={styles.userActionsRow}>
-                      <TouchableOpacity
-                        style={[styles.userBtn, { backgroundColor: '#38A169' }]}
-                        onPress={() => handleUpdateUserPass(u._id, false)}
-                      >
-                        <Text style={styles.userBtnText}>{t('grantFromCalendar')}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.userBtn, { backgroundColor: '#E53E3E' }]}
-                        onPress={() => handleUpdateUserPass(u._id, true)}
-                      >
-                        <Text style={styles.userBtnText}>{t('cancelPass')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })
+              filteredUsers.map((u) => (
+                <UserItem 
+                  key={u._id} 
+                  u={u} 
+                  t={t} 
+                  doUpdatePass={(id, start, end) => doUpdatePass(id, start, end, false)} 
+                  cancelPass={handleCancelUserPass} 
+                />
+              ))
             )}
           </View>
         )}
