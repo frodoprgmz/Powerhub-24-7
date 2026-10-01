@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   langText: {
     color: '#4A5568',
-    fontFamily: 'Helvetica', fontWeight: 'bold',
+    fontWeight: 'bold',
     fontSize: 13,
   },
   logoutBtn: {

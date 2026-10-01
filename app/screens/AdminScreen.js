@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDF2F7',
     borderRadius: 8,
   },
-  langText: { fontSize: 12, fontFamily: 'Helvetica', fontWeight: 'bold', color: '#4A5568' },
+  langText: { fontSize: 12, fontWeight: 'bold', color: '#4A5568' },
   logoutBtn: { paddingHorizontal: 8, paddingVertical: 8 },
   logoutText: { color: '#E53E3E', fontFamily: 'Helvetica', fontWeight: 'bold', fontSize: 15 },
   tabsWrapper: { backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#E2E8F0' },

@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDF2F7',
     borderRadius: 20,
   },
-  langText: { fontSize: 14, color: '#2D3748', fontFamily: 'Helvetica', fontWeight: 'bold' },
+  langText: { fontSize: 14, color: '#2D3748', fontWeight: 'bold' },
   logo: { width: 280, height: 110, marginBottom: 30 },
   title: { fontSize: 26, fontWeight: '800', marginBottom: 25, color: '#2D3748' },
   card: {
