@@ -64,14 +64,15 @@ class TTLockService {
     const token = await this.getToken();
     let allRecords = [];
     let pageNo = 1;
+    const MAX_PAGES = 3; // Fetch max 3 pages (60 records) to avoid timeout
     
-    while (true) {
+    while (pageNo <= MAX_PAGES) {
       const params = new URLSearchParams({
         clientId: process.env.TTLOCK_CLIENT_ID,
         accessToken: token,
         lockId: targetLockId,
         pageNo: pageNo,
-        pageSize: 100,
+        pageSize: 20,
         startDate: startDate,
         endDate: endDate || Date.now(),
         date: Date.now()

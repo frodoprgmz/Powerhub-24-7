@@ -115,16 +115,36 @@ router.get('/status', authMiddleware, async (req, res) => {
   }
 });
 
-// Admin fetches door logs from MongoDB
+// Admin fetches door logs from TTLock Cloud (real history of all lock events)
 router.get('/logs', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const logs = await DoorLog.find()
-      .sort({ timestamp: -1 })
-      .limit(200)
-      .lean();
-    res.json(logs);
+    const records = await ttlockService.getLockRecords();
+
+    // Map TTLock record fields to the format the admin panel expects
+    const formatted = records
+      .sort((a, b) => b.lockDate - a.lockDate) // newest first
+      .slice(0, 200) // limit to 200 most recent
+      .map(r => ({
+        _id: r.recordId,
+        userEmail: r.hotelUsername || r.username || 'nieznany',
+        role: 'client',
+        timestamp: r.lockDate,
+        status: r.success === 1 ? 'Sukces' : 'Błąd',
+        details: r.keyName
+          ? `${r.keyName} (${r.hotelUsername || r.username})`
+          : (r.keyboardPwd ? `Kod: ${r.keyboardPwd}` : r.username || ''),
+      }));
+
+    res.json(formatted);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('TTLock getLockRecords error:', error.message);
+    // Fallback to MongoDB if TTLock API fails
+    try {
+      const logs = await DoorLog.find().sort({ timestamp: -1 }).limit(200).lean();
+      res.json(logs);
+    } catch (dbErr) {
+      res.status(500).json({ message: error.message });
+    }
   }
 });
 
