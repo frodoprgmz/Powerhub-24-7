@@ -115,36 +115,50 @@ router.get('/status', authMiddleware, async (req, res) => {
   }
 });
 
-// Admin fetches door logs from TTLock Cloud (real history of all lock events)
+// Admin fetches door logs from TTLock Cloud AND MongoDB (merged history)
 router.get('/logs', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const records = await ttlockService.getLockRecords();
-
-    // Map TTLock record fields to the format the admin panel expects
-    const formatted = records
-      .sort((a, b) => b.lockDate - a.lockDate) // newest first
-      .slice(0, 200) // limit to 200 most recent
-      .map(r => ({
-        _id: r.recordId,
+    let formattedTtlock = [];
+    try {
+      const records = await ttlockService.getLockRecords();
+      formattedTtlock = records.map(r => ({
+        _id: r.recordId.toString(),
         userEmail: r.hotelUsername || r.username || 'nieznany',
         role: 'client',
-        timestamp: r.lockDate,
+        timestamp: new Date(r.lockDate),
         status: r.success === 1 ? 'Sukces' : 'Błąd',
         details: r.keyName
           ? `${r.keyName} (${r.hotelUsername || r.username})`
-          : (r.keyboardPwd ? `Kod: ${r.keyboardPwd}` : r.username || ''),
+          : (r.keyboardPwd ? `Kod: ${r.keyboardPwd}` : r.username || 'Klucz TTLock'),
       }));
-
-    res.json(formatted);
-  } catch (error) {
-    console.error('TTLock getLockRecords error:', error.message);
-    // Fallback to MongoDB if TTLock API fails
-    try {
-      const logs = await DoorLog.find().sort({ timestamp: -1 }).limit(200).lean();
-      res.json(logs);
-    } catch (dbErr) {
-      res.status(500).json({ message: error.message });
+    } catch (ttErr) {
+      console.error('TTLock getLockRecords error:', ttErr.message);
     }
+
+    // Fetch local MongoDB logs
+    const dbLogs = await DoorLog.find().sort({ timestamp: -1 }).limit(200).lean();
+
+    // Combine both logs
+    const combined = [...dbLogs, ...formattedTtlock];
+
+    // Sort descending by timestamp
+    combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Deduplicate by finding entries within 10 seconds of each other with same user
+    const deduplicated = [];
+    for (const log of combined) {
+      const isDuplicate = deduplicated.some(d => {
+        const timeDiff = Math.abs(new Date(d.timestamp) - new Date(log.timestamp));
+        return timeDiff < 10000 && d.userEmail === log.userEmail;
+      });
+      if (!isDuplicate) {
+        deduplicated.push(log);
+      }
+    }
+
+    res.json(deduplicated.slice(0, 200));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
