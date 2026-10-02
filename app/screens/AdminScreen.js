@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { unlockBluetooth } from '../utils/ttlockHelper';
+import { logBluetoothEvent } from '../utils/logger';
 import secureStorage from '../utils/secureStorage';
 import api from '../api';
 
@@ -170,6 +171,8 @@ export default function AdminScreen({ navigation }) {
 
   const handleUnlock = async () => {
     if (!lockStatus || !lockStatus.lockData) {
+      // Log the attempt even when there's no lock data
+      logBluetoothEvent('Błąd', 'Brak danych zamka — nie można otworzyć (admin)');
       return Alert.alert(t('error'), t('lockDataError'));
     }
     if (isUnlockingRef.current) return;
@@ -181,10 +184,12 @@ export default function AdminScreen({ navigation }) {
       if (activeTab === 'logs') fetchData();
     } catch (error) {
       const errMsg = error.message;
+      // BT errors are already logged inside ttlockHelper — no double-log needed
       Alert.alert(
         t('error'),
         (errMsg && t(errMsg) !== errMsg) ? t(errMsg) : t('somethingWentWrong')
       );
+      if (activeTab === 'logs') fetchData(); // Refresh logs to show the error entry
     } finally {
       setLoading(false);
       isUnlockingRef.current = false;

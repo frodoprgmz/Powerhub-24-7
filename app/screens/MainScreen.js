@@ -13,6 +13,7 @@ import { useIsFocused } from '@react-navigation/native';
 import api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { unlockBluetooth } from '../utils/ttlockHelper';
+import { logBluetoothEvent } from '../utils/logger';
 import secureStorage from '../utils/secureStorage';
 
 // AsyncStorage keys for offline cache
@@ -130,6 +131,10 @@ export default function MainScreen({ navigation }) {
       }
     } catch (error) {
       const errMsg = error.message;
+      // Log API-path errors (BT errors are already logged inside ttlockHelper)
+      if (!lockStatus?.lockData) {
+        logBluetoothEvent('Błąd', `Błąd API unlock: ${errMsg || 'brak połączenia z serwerem'}`);
+      }
       if (errMsg && (errMsg.startsWith('ERR_') || errMsg.includes('ERR_'))) {
         Alert.alert(t('error'), t(errMsg));
       } else {

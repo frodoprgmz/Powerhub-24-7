@@ -29,6 +29,7 @@ export const unlockBluetooth = async (lockData) => {
     try {
       const hasPerms = await requestPermissions();
       if (!hasPerms) {
+        logBluetoothEvent('Błąd', 'Brak uprawnień Bluetooth/Lokalizacji (ERR_PERMS)');
         return reject(new Error('ERR_PERMS'));
       }
 
@@ -36,6 +37,7 @@ export const unlockBluetooth = async (lockData) => {
         try {
           await BleManager.enableBluetooth();
         } catch {
+          logBluetoothEvent('Błąd', 'Bluetooth wyłączony — nie udało się otworzyć zamka (ERR_BT_OFF)');
           return reject(new Error('ERR_BT_OFF'));
         }
       }
@@ -47,6 +49,7 @@ export const unlockBluetooth = async (lockData) => {
         if (!isResolved) {
           isResolved = true;
           try { Ttlock.stopScan(); } catch (e) {}
+          logBluetoothEvent('Błąd', 'Timeout — zamek nie odpowiedział w ciągu 10 sekund (ERR_TIMEOUT)');
           reject(new Error('ERR_TIMEOUT'));
         }
       }, 10000);
@@ -59,7 +62,7 @@ export const unlockBluetooth = async (lockData) => {
           isResolved = true;
           clearTimeout(timeoutId);
           if (__DEV__) console.log('TTLock success:', lockTime, 'battery:', electricQuantity);
-          // Logowanie do backendu (z obsługą offline)
+          // Logowanie sukcesu do backendu (z obsługą offline)
           logBluetoothEvent('Sukces', 'Zamek otwarty przez Bluetooth (Aplikacja)');
           resolve(true);
         },
@@ -68,15 +71,14 @@ export const unlockBluetooth = async (lockData) => {
           isResolved = true;
           clearTimeout(timeoutId);
           if (__DEV__) console.warn('TTLock error:', errorCode, errorDesc);
-          
-          // Zaloguj błąd do backendu
-          logBluetoothEvent('Błąd', `Błąd Bluetooth: ${errorCode} - ${errorDesc}`);
-          
+          // Zaloguj błąd BT do backendu
+          logBluetoothEvent('Błąd', `Błąd Bluetooth: kod ${errorCode} — ${errorDesc}`);
           reject(new Error('ERR_COMM'));
         }
       );
     } catch (e) {
       console.warn('unlockBluetooth unexpected error:', e);
+      logBluetoothEvent('Błąd', `Nieoczekiwany błąd Bluetooth: ${e.message}`);
       reject(new Error('ERR_COMM'));
     }
   });
