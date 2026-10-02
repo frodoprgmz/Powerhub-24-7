@@ -62,30 +62,21 @@ class TTLockService {
   async getLockRecords(startDate = 0, endDate = 0, lockId = null) {
     const targetLockId = lockId || await this.getDefaultLockId();
     const token = await this.getToken();
-    let allRecords = [];
-    let pageNo = 1;
-    const MAX_PAGES = 3; // Fetch max 3 pages (60 records) to avoid timeout
-    
-    while (pageNo <= MAX_PAGES) {
-      const params = new URLSearchParams({
-        clientId: process.env.TTLOCK_CLIENT_ID,
-        accessToken: token,
-        lockId: targetLockId,
-        pageNo: pageNo,
-        pageSize: 20,
-        startDate: startDate,
-        endDate: endDate || Date.now(),
-        date: Date.now()
-      });
-      const response = await axios.get(`${BASE_URL}/v3/lockRecord/list?${params.toString()}`);
-      if (response.data.errcode !== 0) break;
-      const list = response.data.list || [];
-      if (list.length === 0) break;
-      allRecords = allRecords.concat(list);
-      if (response.data.pages <= pageNo) break;
-      pageNo++;
-    }
-    return allRecords;
+
+    const params = new URLSearchParams({
+      clientId: process.env.TTLOCK_CLIENT_ID,
+      accessToken: token,
+      lockId: targetLockId,
+      pageNo: 1,
+      pageSize: 20,
+      startDate: startDate,
+      endDate: endDate || Date.now(),
+      date: Date.now()
+    });
+
+    const response = await axios.get(`${BASE_URL}/v3/lockRecord/list?${params.toString()}`);
+    if (response.data.errcode !== 0) return [];
+    return response.data.list || [];
   }
 
   async unlock(lockId) {
