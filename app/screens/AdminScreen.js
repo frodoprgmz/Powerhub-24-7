@@ -156,7 +156,9 @@ export default function AdminScreen({ navigation }) {
         setUsers(usersRes.data);
       }
     } catch (error) {
-      // Silent fail — fetchData is triggered on tab change; UI shows stale/empty data
+      const msg = error.response?.data?.message || error.message || 'Błąd połączenia';
+      console.error('[AdminScreen] fetchData error:', msg, error.response?.status);
+      Alert.alert('Błąd ładowania', `Nie udało się pobrać danych:\n${msg}`);
     } finally {
       setLoading(false);
     }
