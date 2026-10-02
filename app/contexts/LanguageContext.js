@@ -100,7 +100,7 @@ const translations = {
 
     // Common
     logout: 'Wyloguj',
-    langToggle: '🇬🇧 English',
+    langToggle: 'EN | English',
     success: 'Sukces',
     error: 'Błąd',
     loading: 'Ładowanie...',
@@ -219,7 +219,7 @@ const translations = {
 
     // Common
     logout: 'Logout',
-    langToggle: '🇵🇱 Polski',
+    langToggle: 'PL | Polski',
     success: 'Success',
     error: 'Error',
     loading: 'Loading...',
