@@ -115,22 +115,14 @@ router.get('/status', authMiddleware, async (req, res) => {
   }
 });
 
-// Admin fetches door logs
+// Admin fetches door logs from MongoDB
 router.get('/logs', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const records = await ttlockService.getLockRecords();
-    
-    // Format records to match old format
-    const formatted = records.map(r => ({
-      ...r,
-      _id: r.recordId,
-      timestamp: r.lockDate,
-      status: r.success === 1 ? 'Sukces' : 'Błąd',
-      details: `Konto: ${r.username}`,
-      userEmail: r.username
-    }));
-    
-    res.json(formatted);
+    const logs = await DoorLog.find()
+      .sort({ timestamp: -1 })
+      .limit(200)
+      .lean();
+    res.json(logs);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
