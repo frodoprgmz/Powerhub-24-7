@@ -14,16 +14,25 @@ router.post('/order', authMiddleware, async (req, res) => {
     // Ensure we have an email for the buyer
     const buyerEmail = user.email || req.body.email || 'klient@powerhub.pl';
     
-    // In a real app, amount comes from a verified price list, not directly from frontend.
-    // Assuming 1-month pass is 139 PLN = 13900 groszy
-    const totalAmount = 100; // Tymczasowo 1 PLN do testu aktywacyjnego PayU (zamiast 13900) 
+    const passType = req.body.type || 'monthly';
+    let totalAmount = 10000; // 100 PLN in groszy
+    let description = 'Karnet Miesieczny Powerhub 24/7';
+    let productName = 'Karnet 30-dniowy';
+    let passDuration = 30; // days
+
+    if (passType === 'daily') {
+      totalAmount = 2000; // 20 PLN in groszy
+      description = 'Karnet Jednorazowy Powerhub 24/7';
+      productName = 'Karnet 1-dniowy';
+      passDuration = 1; // 1 day
+    }
     
-    // Generate unique order ID
-    const extOrderId = `PHUB_${Date.now()}_${user._id}`;
+    // Generate unique order ID. We append the duration so the webhook knows how many days to add.
+    const extOrderId = `PHUB_${Date.now()}_${user._id}_${passDuration}`;
 
     const orderData = {
       customerIp: req.ip || req.connection.remoteAddress || '127.0.0.1',
-      description: 'Miesieczny Karnet Powerhub 24/7',
+      description: description,
       totalAmount: totalAmount,
       extOrderId: extOrderId,
       buyer: {
@@ -32,20 +41,16 @@ router.post('/order', authMiddleware, async (req, res) => {
       },
       products: [
         {
-          name: 'Karnet 30-dniowy',
+          name: productName,
           unitPrice: totalAmount,
           quantity: 1
         }
       ],
-      // URL the user is redirected to after finishing payment (success or error)
-      // Since it's a mobile app, this should be a deep link to the app (e.g., powerhub://payment-result)
+      // URL the user is redirected to after finishing payment
       continueUrl: 'https://powerhubappbackend.onrender.com/api/payu/success'
     };
 
     const orderResult = await payuService.createOrder(orderData);
-    
-    // Create a pending payment record in DB (optional, but good practice)
-    // await Payment.create({ extOrderId, userId: user._id, status: 'PENDING', amount: totalAmount });
 
     res.json({
       orderId: orderResult.orderId,
@@ -59,11 +64,10 @@ router.post('/order', authMiddleware, async (req, res) => {
 });
 
 // 2. Webhook / Notification endpoint called by PayU server
-// We MUST parse the raw body to correctly verify the signature
 const bodyParser = require('body-parser');
 router.post('/notify', bodyParser.text({type: 'application/json'}), async (req, res) => {
   const signatureHeader = req.headers['openpayu-signature'];
-  const bodyString = req.body; // Raw string body
+  const bodyString = req.body; 
 
   if (!payuService.verifySignature(signatureHeader, bodyString)) {
     console.error('PayU Webhook: Invalid signature!');
@@ -77,12 +81,13 @@ router.post('/notify', bodyParser.text({type: 'application/json'}), async (req, 
     if (order && order.status === 'COMPLETED') {
       console.log(`PayU Webhook: Order ${order.extOrderId} COMPLETED!`);
       
-      // Parse the user ID from the extOrderId (format: PHUB_timestamp_userId)
+      // Parse the user ID and duration from extOrderId (PHUB_timestamp_userId_duration)
       const parts = order.extOrderId.split('_');
       const userId = parts[2];
+      const duration = parseInt(parts[3]) || 30;
 
       if (userId) {
-        // Extend user's pass by 30 days
+        // Extend user's pass
         const user = await User.findById(userId);
         if (user) {
           const now = new Date();
@@ -90,28 +95,21 @@ router.post('/notify', bodyParser.text({type: 'application/json'}), async (req, 
           if (user.activePassExpiry && user.activePassExpiry > now) {
             newExpiry = new Date(user.activePassExpiry);
           }
-          newExpiry.setDate(newExpiry.getDate() + 30);
+          newExpiry.setDate(newExpiry.getDate() + duration);
           
           user.activePassExpiry = newExpiry;
           await user.save();
-          console.log(`User ${user.email} pass extended to ${newExpiry}`);
+          console.log(`User ${user.email} pass extended by ${duration} days to ${newExpiry}`);
         }
       }
     }
 
-    // Always respond 200 OK so PayU doesn't retry
+    // Always respond 200 OK
     res.status(200).send('OK');
   } catch (error) {
     console.error('PayU Webhook Error:', error.message);
     res.status(500).send('Error processing notification');
   }
-});
-
-
-
-// Redirect endpoint to jump back into the app
-router.get('/success', (req, res) => {
-  res.send('<html><head><meta http-equiv="refresh" content="0;url=powerhub://payment-result" /></head><body>Powrot do aplikacji... <script>window.location.href="powerhub://payment-result";</script></body></html>');
 });
 
 // Redirect endpoint to jump back into the app
