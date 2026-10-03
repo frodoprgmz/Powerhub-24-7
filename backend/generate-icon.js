@@ -7,7 +7,7 @@ async function createPaddedIcon() {
     const logo = await Jimp.read(logoPath);
     
     // Scale logo down
-    logo.resize({ w: 600 });
+    logo.resize({ w: 1000 });
     
     // Create new image 1024x1024 white
     const bg = new Jimp({ width: 1024, height: 1024, color: 0xFFFFFFFF });

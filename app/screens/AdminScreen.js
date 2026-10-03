@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
-  logoSmall: { width: 140, height: 45 },
+  logoSmall: { width: 200, height: 65 },
   langBtn: {
     paddingHorizontal: 12,
     paddingVertical: 8,

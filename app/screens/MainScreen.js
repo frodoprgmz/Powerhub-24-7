@@ -305,8 +305,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoSmall: {
-    width: 140,
-    height: 45,
+    width: 200,
+    height: 65,
   },
   langBtn: {
     paddingHorizontal: 12,
