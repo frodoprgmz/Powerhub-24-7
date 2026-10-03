@@ -72,7 +72,7 @@ class PayUService {
       return response.data; // Includes orderId and redirectUri
     } catch (error) {
       // Axios treats 302 Found (PayU redirect) as error if maxRedirects is 0, but PayU returns 200 OK or 201 Created for REST API calls
-      if (error.response && (error.response.status === 201 || error.response.status === 200)) {
+      if (error.response && (error.response.status === 201 || error.response.status === 200 || error.response.status === 302)) {
         return error.response.data;
       }
       console.error('PayU Create Order Error:', error.response?.data || error.message);
