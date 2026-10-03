@@ -2,6 +2,7 @@
   "expo": {
     "name": "Powerhub 24/7",
     "slug": "powerhub",
+    "scheme": "powerhub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/padded-icon.png",

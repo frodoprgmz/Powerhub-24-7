@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -19,9 +20,16 @@ export default function BuyPassScreen({ navigation }) {
   const handleBuy = async (type) => {
     setLoading(true);
     try {
-      const response = await api.post('/passes/buy', { type });
-      Alert.alert(t('success'), t('paymentSuccess') + (response.data.message || ''));
-      navigation.goBack();
+      // 1. Zgloszenie do backendu zeby utworzyl zamowienie w PayU
+      const response = await api.post('/payu/order', { type });
+      const { redirectUri } = response.data;
+      
+      if (redirectUri) {
+        // 2. Otwarcie przegladarki z platnoscia PayU
+        await Linking.openURL(redirectUri);
+      } else {
+        Alert.alert(t('error'), 'Brak linku do platnosci');
+      }
     } catch (error) {
       Alert.alert(t('paymentErrorTitle'), error.response?.data?.message || t('paymentError'));
     } finally {
