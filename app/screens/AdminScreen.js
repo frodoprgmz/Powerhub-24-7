@@ -128,7 +128,7 @@ export default function AdminScreen({ navigation }) {
         fetchData();
       } catch (error) {
         if (error.response?.status === 401 || error.response?.status === 403) {
-          Alert.alert(t('error'), 'Unauthorized access');
+          Alert.alert(t('error'), t('somethingWentWrong'));
           logout();
         }
       }
@@ -156,9 +156,9 @@ export default function AdminScreen({ navigation }) {
         setUsers(usersRes.data);
       }
     } catch (error) {
-      const msg = error.response?.data?.message || error.message || 'Błąd połączenia';
+      const msg = error.response?.data?.message || error.message || 'Connection error';
       console.error('[AdminScreen] fetchData error:', msg, error.response?.status);
-      Alert.alert('Błąd ładowania', `Nie udało się pobrać danych:\n${msg}`);
+      Alert.alert(t('error'), `${t('somethingWentWrong')}:\n${msg}`);
     } finally {
       setLoading(false);
     }

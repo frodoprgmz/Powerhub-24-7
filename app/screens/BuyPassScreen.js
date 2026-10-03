@@ -28,7 +28,7 @@ export default function BuyPassScreen({ navigation }) {
         // 2. Otwarcie przegladarki z platnoscia PayU
         await Linking.openURL(redirectUri);
       } else {
-        Alert.alert(t('error'), 'Brak linku do platnosci');
+        Alert.alert(t('error'), t('paymentError'));
       }
     } catch (error) {
       Alert.alert(t('paymentErrorTitle'), error.response?.data?.message || t('paymentError'));
