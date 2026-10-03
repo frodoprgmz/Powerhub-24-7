@@ -18,7 +18,7 @@ router.post('/unlock', authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await ttlockService.unlock(req.body.lockId); // Uses provided lockId or auto-uses default
+    const result = await ttlockService.unlock(); // Auto-uses default lock
     if (result.errcode === 0) {
       // Log success
       await DoorLog.create({
