@@ -16,7 +16,7 @@ router.post('/order', authMiddleware, async (req, res) => {
     
     // In a real app, amount comes from a verified price list, not directly from frontend.
     // Assuming 1-month pass is 139 PLN = 13900 groszy
-    const totalAmount = 13900; 
+    const totalAmount = 100; // Tymczasowo 1 PLN do testu aktywacyjnego PayU (zamiast 13900) 
     
     // Generate unique order ID
     const extOrderId = `PHUB_${Date.now()}_${user._id}`;
