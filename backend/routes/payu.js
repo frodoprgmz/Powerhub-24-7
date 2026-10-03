@@ -39,7 +39,7 @@ router.post('/order', authMiddleware, async (req, res) => {
       ],
       // URL the user is redirected to after finishing payment (success or error)
       // Since it's a mobile app, this should be a deep link to the app (e.g., powerhub://payment-result)
-      continueUrl: 'powerhub://payment-result'
+      continueUrl: 'https://powerhubappbackend.onrender.com/api/payu/success'
     };
 
     const orderResult = await payuService.createOrder(orderData);
@@ -105,6 +105,18 @@ router.post('/notify', bodyParser.text({type: 'application/json'}), async (req, 
     console.error('PayU Webhook Error:', error.message);
     res.status(500).send('Error processing notification');
   }
+});
+
+
+
+// Redirect endpoint to jump back into the app
+router.get('/success', (req, res) => {
+  res.send('<html><head><meta http-equiv="refresh" content="0;url=powerhub://payment-result" /></head><body>Powrot do aplikacji... <script>window.location.href="powerhub://payment-result";</script></body></html>');
+});
+
+// Redirect endpoint to jump back into the app
+router.get('/success', (req, res) => {
+  res.send('<html><head><meta http-equiv="refresh" content="0;url=powerhub://payment-result" /></head><body>Powrot do aplikacji... <script>window.location.href="powerhub://payment-result";</script></body></html>');
 });
 
 module.exports = router;
