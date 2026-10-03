@@ -120,20 +120,27 @@ export default function MainScreen({ navigation }) {
     isUnlockingRef.current = true;
     setLoading(true);
     try {
+      let btSuccess = false;
       if (lockStatus?.lockData) {
-        // Bluetooth path — works offline!
-        await unlockBluetooth(lockStatus.lockData);
-        Alert.alert(t('success'), t('openDoor'));
-      } else {
-        // Fallback to API (requires internet)
-        const response = await api.post('/lock/unlock');
+        try {
+          await unlockBluetooth(lockStatus.lockData);
+          btSuccess = true;
+          Alert.alert(t('success'), t('openDoor'));
+        } catch (btError) {
+          if (isOffline) {
+            throw btError;
+          }
+          console.log('Bluetooth failed, falling back to API:', btError.message);
+        }
+      }
+      if (!btSuccess) {
+        const response = await api.post('/lock/unlock', { lockId: lockStatus?.lockId });
         Alert.alert(t('success'), response.data.message || t('openDoor'));
       }
     } catch (error) {
       const errMsg = error.message;
-      // Log API-path errors (BT errors are already logged inside ttlockHelper)
-      if (!lockStatus?.lockData) {
-        logBluetoothEvent('Błąd', `Błąd API unlock: ${errMsg || 'brak połączenia z serwerem'}`);
+      if (!lockStatus?.lockData || isOffline) {
+        logBluetoothEvent('Blad', `Blad unlock: ${errMsg || 'brak polaczenia'}`);
       }
       if (errMsg && (errMsg.startsWith('ERR_') || errMsg.includes('ERR_'))) {
         Alert.alert(t('error'), t(errMsg));
