@@ -44,15 +44,15 @@ export const unlockBluetooth = async (lockData) => {
 
       let isResolved = false;
 
-      // Timeout po 10 sekundach
+      // Timeout po 6 sekundach
       const timeoutId = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
           try { Ttlock.stopScan(); } catch (e) {}
-          logBluetoothEvent('Błąd', 'Timeout — zamek nie odpowiedział w ciągu 10 sekund (ERR_TIMEOUT)');
+          logBluetoothEvent('Błąd', 'Timeout — zamek nie odpowiedział w ciągu 6 sekund (ERR_TIMEOUT)');
           reject(new Error('ERR_TIMEOUT'));
         }
-      }, 10000);
+      }, 6000);
 
       Ttlock.controlLock(
         LockControlType.Unlock,
@@ -82,4 +82,20 @@ export const unlockBluetooth = async (lockData) => {
       reject(new Error('ERR_COMM'));
     }
   });
+};
+
+
+export const prepareBluetooth = async () => {
+  try {
+    const hasPerms = await requestPermissions();
+    if (!hasPerms) return;
+    if (Platform.OS === 'android') {
+      try { await BleManager.enableBluetooth(); } catch (e) {}
+    }
+    // Krotkie skanowanie w tle, aby wybudzic radio BT i cache OS
+    Ttlock.startScan(() => {});
+    setTimeout(() => {
+      try { Ttlock.stopScan(); } catch (e) {}
+    }, 2000);
+  } catch (e) {}
 };

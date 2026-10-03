@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { unlockBluetooth } from '../utils/ttlockHelper';
+import { unlockBluetooth, prepareBluetooth } from '../utils/ttlockHelper';
 import { logBluetoothEvent } from '../utils/logger';
 import secureStorage from '../utils/secureStorage';
 
@@ -50,8 +50,8 @@ export default function MainScreen({ navigation }) {
 
   useEffect(() => {
     if (isFocused) {
+      prepareBluetooth(); // Warm up Bluetooth
       const now = Date.now();
-      // Only auto-fetch if TTL has passed, avoid hammering on quick back-navigations
       if (now - lastFetchRef.current > FETCH_TTL) {
         loadData();
       }
